@@ -49,6 +49,7 @@ CTestTestfile.cmake
 _deps
 build
 .vscode
+.cache
 ### CMake Patch ###
 CMakeUserPresets.json
 
