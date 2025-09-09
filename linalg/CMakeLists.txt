@@ -2,6 +2,7 @@ add_library(linalg
     matrix.cpp
     vector.cpp
     operations.cpp
+    solvers.cpp
 )
 
 target_compile_options(linalg PRIVATE

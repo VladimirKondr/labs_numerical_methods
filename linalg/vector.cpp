@@ -1,32 +1,41 @@
-#ifndef vector_CPP
-#define vector_CPP
+#ifndef VECTOR_CPP
+#define VECTOR_CPP
 
 #include <vector>
 #include <cmath>
 #include <iostream>
-#include <stdexcept>
+#include <algorithm>
+#include <random>
 
-template <typename T = double>
+template<typename T = double>
 class vector : public std::vector<T> {
 public:
-    // Default constructor
-    vector() = default;
-
-    // Constructor with size
-    explicit vector(size_t size) : std::vector<T>(size) {}
-
-    // Constructor with size and value
-    vector(size_t size, T value) : std::vector<T>(size, value) {}
-
-    // Copy constructor from std::vector
-    vector(const std::vector<T>& other) : std::vector<T>(other) {}
-
+    using std::vector<T>::vector;
 
     /**
-     * @brief Calculates the Euclidean norm (L2 norm) of the vector.
-     * @return The Euclidean norm of the vector.
+     * @brief Creates a vector with random values.
+     * @param size The size of the vector.
+     * @param seed Seed for the random number generator.
+     * @return A new vector with random values.
      */
-    T norm() const {
+    static vector<T> random(int size, uint64_t seed, T min_val = -100.0, T max_val = 100.0) {
+        if (min_val > max_val) {
+            throw std::invalid_argument("Min bnorder of random must be less of equal to the max border");
+        }
+        vector<T> result(size);
+        std::mt19937 gen(seed);
+        std::uniform_real_distribution<double> dis(min_val, max_val);
+        for (int i = 0; i < size; ++i) {
+            result[i] = dis(gen);
+        }
+        return result;
+    }
+
+    /**
+     * @brief Calculates the Euclidean norm2 (L2 norm2) of the vector.
+     * @return The Euclidean norm2 of the vector.
+     */
+    T norm2() const {
         T sum_sq = 0;
         for (const auto& val : *this) {
             sum_sq += val * val;
@@ -35,32 +44,30 @@ public:
     }
 
     /**
-     * @brief Calculates the infinity norm (max norm) of the vector.
-     * @return The infinity norm of the vector.
+     * @brief Calculates the infinity norm2 (max norm2) of the vector.
+     * @return The infinity norm2 of the vector.
      */
     T norm_inf() const {
-        T max_val = 0;
         if (this->empty()) {
-            return 0;
+            return 0.0;
         }
+        T max_val = 0.0;
         for (const auto& val : *this) {
-            if (std::abs(val) > max_val) {
-                max_val = std::abs(val);
-            }
+            max_val = std::max(max_val, std::abs(val));
         }
         return max_val;
     }
 
     /**
-     * @brief Calculates the p-norm of the vector.
-     * @param p The order of the norm.
-     * @return The p-norm of the vector.
+     * @brief Calculates the p-norm2 of the vector.
+     * @param p The order of the norm2.
+     * @return The p-norm2 of the vector.
      */
-    T norm_p(int p) const {
-        if (p <= 0) {
-            throw std::invalid_argument("p must be a positive integer for p-norm.");
+    T p_norm(double p) const {
+        if (this->empty()) {
+            return 0.0;
         }
-        T sum = 0;
+        T sum = 0.0;
         for (const auto& val : *this) {
             sum += std::pow(std::abs(val), p);
         }
@@ -69,32 +76,28 @@ public:
 };
 
 /**
- * @brief Overloads the << operator to print the vector.
- * @param os The output stream.
- * @param v The vector to print.
- * @return The output stream.
+ * \brief Adds two vectors element-wise.
+ * \param a First vector.
+ * \param b Second vector.
+ * \return The resulting vector after addition.
  */
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const vector<T>& v) {
-    os << "[";
-    for (size_t i = 0; i < v.size(); ++i) {
-        os << v[i] << (i == v.size() - 1 ? "" : ", ");
+template<typename T>
+vector<T> operator+(const vector<T>& a, const vector<T>& b) {
+    vector<T> result(a.size());
+    for (size_t i = 0; i < a.size(); ++i) {
+        result[i] = a[i] + b[i];
     }
-    os << "]";
-    return os;
+    return result;
 }
 
 /**
- * @brief Overloads the - operator for vector subtraction.
- * @param a The first vector.
- * @param b The second vector.
- * @return The resulting vector from the subtraction.
+ * \brief Subtracts two vectors element-wise.
+ * \param a First vector.
+ * \param b Second vector.
+ * \return The resulting vector after subtraction.
  */
-template <typename T>
+template<typename T>
 vector<T> operator-(const vector<T>& a, const vector<T>& b) {
-    if (a.size() != b.size()) {
-        throw std::invalid_argument("Vectors must have the same size for subtraction.");
-    }
     vector<T> result(a.size());
     for (size_t i = 0; i < a.size(); ++i) {
         result[i] = a[i] - b[i];
@@ -102,4 +105,53 @@ vector<T> operator-(const vector<T>& a, const vector<T>& b) {
     return result;
 }
 
-#endif // vector_CPP
+/**
+ * \brief Computes the dot product of two vectors.
+ * \param a First vector.
+ * \param b Second vector.
+ * \return The dot product (scalar of the same type).
+ */
+template <typename T>
+T operator*(const vector<T>& a, const vector<T>& b) {
+    if (a.size() != b.size()) {
+        throw std::runtime_error("Dot product takes two same-size vectors");
+    }
+    T init{};
+    for (uint64_t i = 0; i < a.size(); ++i) {
+        init += a[i] * b[i];
+    }
+    return init;
+}
+
+/**
+ * \brief Computes the cross product of two vectors.
+ * \param a First vector.
+ * \param b Second vector.
+ * \return The cross product (vector of the same type).
+ */
+template <typename T>
+vector<T> operator^(const vector<T>& a, const vector<T>& b) {
+    if (a.size() != b.size() || a.size() != 3) {
+        throw std::invalid_argument("Cross product takes two 3D vectors");
+    }
+    const T i = a[1] * b[2] - a[2] * b[1];
+    const T j = a[2] * b[0] - a[0] * b[2];
+    const T k = a[0] * b[1] - a[1] * b[0];
+    return vector<T>{i, j, k};
+}
+
+/**
+ * \brief Outputs the vector to the given output stream.
+ * \param os The output stream.
+ * \param v The vector to output.
+ * \return The output stream.
+ */
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const vector<T>& v) {
+    for (const auto& elem : v) {
+        os << elem << " ";
+    }
+    return os;
+}
+
+#endif // VECTOR_CPP

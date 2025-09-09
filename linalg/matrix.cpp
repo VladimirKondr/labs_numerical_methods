@@ -1,13 +1,31 @@
 #ifndef MATRIX_CPP
 #define MATRIX_CPP
 
+#include "vector.cpp"
 #include <vector>
-#include <cmath> 
-#include <stdexcept>
 
 template <typename T = double>
-class matrix : public std::vector<std::vector<T>> {
+class matrix : public std::vector<vector<T>> {
 public:
+    matrix(int rows, int cols) : std::vector<vector<T>>(rows, vector<T>(cols)) {}
+
+    /**
+     * @brief Creates a matrix with random values.
+     * @param rows Number of rows.
+     * @param cols Number of columns.
+     * @param min_val Minimum value for random numbers.
+     * @param max_val Maximum value for random numbers.
+     * @param seed Seed for the random number generator. If 0, a random seed is used.
+     * @return A new matrix with random values.
+     */
+    static matrix<T> random(int rows, int cols, uint64_t seed, T min_val = -100.0, T max_val = 100.0) {
+        matrix<T> result(rows, cols);
+        for (int i = 0; i < rows; ++i) {
+            result[i] = vector<T>::random(cols, seed + i, min_val, max_val);
+        }
+        return result;
+    }
+
     /**
      * @brief Calculates the determinant of a submatrix using the Gaussian method.
      * @param i1 The starting index of the submatrix row.
@@ -84,11 +102,17 @@ public:
         return determinant;
     }
 
-    uint64_t size1() const {
+    /**
+    * @brief Returns the number of rows and columns in the matrix.
+     */
+    uint64_t rows() const {
         return this->size();
     }
 
-    uint64_t size2() const {
+    /**
+    * @brief Returns the number of columns in the matrix.
+     */
+    uint64_t cols() const {
         return this->empty() ? 0 : (*this)[0].size();
     }
 
