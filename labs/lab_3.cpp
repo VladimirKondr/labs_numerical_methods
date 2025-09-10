@@ -11,35 +11,19 @@
 #include "../linalg/solvers.cpp"
 
 int main() {
-    const uint64_t n = 2000;
+    const uint64_t n = 2000 - 1;
     const uint64_t m = 4;
     const uint64_t k = 3;
     const uint64_t seed = time(0);
 
-    std::cout << "Running ldlt solve for n=" << n << ", m=" << m << ", seed=" << seed << std::endl;
-    matrix<> a = matrix<>::random(n, n, seed, -100.0, -1);
+    std::cout << "Running sweep solve for n=" << n << ", m=" << m << ", seed=" << seed << std::endl;
+    matrix<> a(n + 1, n + 1);
+    
+    for (uint64_t i = 0; i < n + 1; ++i) {
+        for (uint64_t j = std::max(static_cast<uint64_t>(0), i - 1); j < std::min(n + 1, i + 2); ++j) {
 
-    for (uint64_t i = 0; i < n; ++i) {
-        for (uint64_t j = i + 1; j < n; ++j) {
-            a(i, j) = a(j, i);
         }
     }
-    for (uint64_t i = 1; i < n; ++i) {
-        double temp_sum = 0.0;
-        for (uint64_t j = 0; j < n; ++j) {
-            if (j == i) {
-                continue;
-            }
-            temp_sum += a(i, j);
-        }
-        a(i, i) = -temp_sum;
-    }
-    double temp_sum = 0.0;
-    for (uint64_t j = 1; j < n; ++j) {
-        temp_sum += a(0, j);
-    }
-    a(0, 0) = -temp_sum + 1 / std::pow(10, k - 2);
-
     vector<> x_exact(n);
     for (uint64_t i = 0; i < n; ++i) {
         x_exact[i] = m + i;

@@ -18,14 +18,14 @@ public:
      * @param seed Seed for the random number generator.
      * @return A new vector with random values.
      */
-    static vector<T> random(int size, uint64_t seed, T min_val = -100.0, T max_val = 100.0) {
+    static vector<T> random(uint64_t size, uint64_t seed, T min_val = -100.0, T max_val = 100.0) {
         if (min_val > max_val) {
             throw std::invalid_argument("Min bnorder of random must be less of equal to the max border");
         }
         vector<T> result(size);
         std::mt19937 gen(seed);
         std::uniform_real_distribution<double> dis(min_val, max_val);
-        for (int i = 0; i < size; ++i) {
+        for (uint64_t i = 0; i < size; ++i) {
             result[i] = dis(gen);
         }
         return result;

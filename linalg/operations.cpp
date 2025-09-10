@@ -22,7 +22,7 @@ vector<T> operator*(const matrix<T>& a, const vector<T>& b) {
     for (uint64_t i = 0; i < a.rows(); ++i) {
         T temp{};
         for (uint64_t j = 0; j < a.cols(); ++j) {
-            temp += b[j] * a[i][j];
+            temp += b[j] * a(i, j);
         }
         res[i] = temp;
     }
@@ -51,7 +51,7 @@ matrix<T> operator*(const matrix<T>& a, const matrix<T>& b) {
     for (uint64_t i = 0; i < a_rows; ++i) {
         for (uint64_t j = 0; j < b_cols; ++j) {
             for (uint64_t k = 0; k < a_cols; ++k) {
-                res[i][j] += a[i][k] * b[k][j];
+                res(i, j) += a(i, k) * b(k, j);
             }
         }
     }

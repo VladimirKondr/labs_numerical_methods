@@ -7,15 +7,15 @@
 #include "../linalg/solvers.cpp"
 
 int main() {
-    const int n = 2000;
-    const int m = 4;
+    const uint64_t n = 2000;
+    const uint64_t m = 4;
     const uint64_t seed = time(0);
 
     std::cout << "Running gaussian solve for n=" << n << ", m=" << m << ", seed=" << seed << std::endl;
     matrix<> a = matrix<>::random(n, n, seed);
 
     vector<> x_exact(n);
-    for (int i = 0; i < n; ++i) {
+    for (uint64_t i = 0; i < n; ++i) {
         x_exact[i] = m + i;
     }
 
@@ -35,7 +35,7 @@ int main() {
 
     std::cout << "--- Without Pivoting ---" << std::endl;
     std::cout << "First 5 coordinates of x*: ";
-    for (int i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         std::cout << x_no_pivot[i] << " ";
     }
     std::cout << std::endl;
@@ -60,7 +60,7 @@ int main() {
 
     std::cout << "--- With Pivoting ---" << std::endl;
     std::cout << "First 5 coordinates of x*: ";
-    for (int i = 0; i < 5; ++i) {
+    for (uint64_t i = 0; i < 5; ++i) {
         std::cout << x_pivot[i] << " ";
     }
     std::cout << std::endl;

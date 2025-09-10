@@ -37,26 +37,28 @@ vector<T> gauss_solve(const matrix<T>& a_in, const vector<T>& b_in, PivotStrateg
         if (strategy == PivotStrategy::PARTIAL_PIVOT) {
             uint64_t max_row = i;
             for (uint64_t k = i + 1; k < n; ++k) {
-                if (std::abs(a[k][i]) > std::abs(a[max_row][i])) {
+                if (std::abs(a(k, i)) > std::abs(a(max_row, i))) {
                     max_row = k;
                 }
             }
 
             if (max_row != i) {
-                std::swap(a[i], a[max_row]);
+                for (uint64_t k = i; k < n; ++k) {
+                    std::swap(a(i, k), a(max_row, k));
+                }
                 std::swap(b[i], b[max_row]);
             }
         }
 
         // If pivot is close to zero, matrix is singular
-        if (std::abs(a[i][i]) < 1e-12) {
+        if (std::abs(a(i, i)) < 1e-12) {
             throw std::runtime_error("Matrix is singular or nearly singular.");
         }
 
         for (uint64_t k = i + 1; k < n; ++k) {
-            T factor = a[k][i] / a[i][i];
+            T factor = a(k, i) / a(i, i);
             for (uint64_t j = i; j < n; ++j) {
-                a[k][j] -= factor * a[i][j];
+                a(k, j) -= factor * a(i, j);
             }
             b[k] -= factor * b[i];
         }
@@ -67,16 +69,16 @@ vector<T> gauss_solve(const matrix<T>& a_in, const vector<T>& b_in, PivotStrateg
     for (int i = n - 1; i >= 0; --i) {
         T sum = 0;
         for (uint64_t j = i + 1; j < n; ++j) {
-            sum += a[i][j] * x[j];
+            sum += a(i, j) * x[j];
         }
-        x[i] = (b[i] - sum) / a[i][i];
+        x[i] = (b[i] - sum) / a(i, i);
     }
 
     return x;
 }
 
 /**
- * @brief Performs LDLT decomposition of a symmetric matrix.
+ * @brief Performs in-place LDLT decomposition of a symmetric matrix.
  * The lower triangular matrix L (without the unit diagonal) is stored in the lower part of a,
  * and the diagonal matrix D is stored on the main diagonal of a.
  * @tparam T The data type of the matrix elements.
@@ -84,35 +86,33 @@ vector<T> gauss_solve(const matrix<T>& a_in, const vector<T>& b_in, PivotStrateg
  * https://math.stackexchange.com/questions/2512046/give-an-algorithm-to-compute-the-ldlt-decomposition
  */
 template <typename T>
-std::pair<matrix<T>, matrix<T>> ldlt_decomposition(const matrix<T>& a) {
+void ldlt_decomposition(matrix<T>& a) {
     const uint64_t n = a.rows();
     if (n != a.cols()) {
         throw std::invalid_argument("Matrix must be square for LDLT decomposition.");
     }                   
 
-    matrix<T> l(n, n);
-    matrix<T> d(n, n);
-
+    std::vector<T> v(n);
     for (uint64_t j = 0; j < n; ++j) {
-        l[j][j] = 1;
         T temp_sum = 0.0;
         for (uint64_t k = 0; k < j; ++k) {
-            temp_sum += l[j][k] * l[j][k] * d[k][k];
+            v[k] = a(j, k) * a(k, k);
+            temp_sum += a(j, k) * v[k];
         }
-        d[j][j] = a[j][j] - temp_sum;
+        a(j, j) -= temp_sum;
+        if (std::abs(a(j, j)) < 1e-12) {
+            throw std::runtime_error("LDLT algorithm has encountered zero-element of D");
+        }
 
+        const T inv = T(1.0) / a(j, j);
         for (uint64_t i = j + 1; i < n; ++i) {
-            T temp_sum = 0.0;
+            T sum_l = 0.0;
             for (uint64_t k = 0; k < j; ++k) {
-                temp_sum += l[i][k] * l[j][k] * d[k][k];
+                sum_l += a(i, k) * v[k];
             }
-            if (d[j][i] < 1e-12) {
-                throw std::runtime_error("LDLT algorithm has encountered zero-element of D");
-            }
-            l[i][j] = (a[j][i] - temp_sum) / d[j][j];
+            a(i, j) = (a(i, j) - sum_l) * inv;
         }
     }
-    return {l, d};
 }
 
 /**
@@ -131,7 +131,7 @@ vector<T> ldlt_solve(const matrix<T>& a_in, const vector<T>& b) {
         throw std::invalid_argument("Matrix must be square and sizes must match.");
     }
 
-    auto [l, d] = ldlt_decomposition(a);
+    ldlt_decomposition(a);
     // LDL^Tx = b
     // 1) z = DL^Tx
     // Lz = b
@@ -144,7 +144,7 @@ vector<T> ldlt_solve(const matrix<T>& a_in, const vector<T>& b) {
     for (uint64_t i = 0; i < n; ++i) {
         T sum = 0;
         for (uint64_t j = 0; j < i; ++j) {
-            sum += l[i][j] * z[j];
+            sum += a(i, j) * z[j];
         }
         z[i] = b[i] - sum;
     }
@@ -152,7 +152,7 @@ vector<T> ldlt_solve(const matrix<T>& a_in, const vector<T>& b) {
     // Diagonal scaling (Dy = z)
     vector<T> y(n);
     for (uint64_t i = 0; i < n; ++i) {
-        y[i] = z[i] / d[i][i];
+        y[i] = z[i] / a(i, i);
     }
 
     // Backward substitution (L^T x = y)
@@ -160,7 +160,7 @@ vector<T> ldlt_solve(const matrix<T>& a_in, const vector<T>& b) {
     for (int i = n - 1; i >= 0; --i) {
         T sum = 0;
         for (uint64_t j = i + 1; j < n; ++j) {
-            sum += l[j][i] * x[j];
+            sum += a(j, i) * x[j];
         }
         x[i] = y[i] - sum;
     }
