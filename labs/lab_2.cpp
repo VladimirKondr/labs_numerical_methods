@@ -11,13 +11,14 @@
 #include "../linalg/solvers.cpp"
 
 int main() {
+    std::cout << std::fixed << std::setprecision(15);
     const uint64_t n = 2000;
     const uint64_t m = 4;
     const uint64_t k = 3;
     const uint64_t seed = time(0);
 
     std::cout << "Running ldlt solve for n=" << n << ", m=" << m << ", seed=" << seed << std::endl;
-    matrix<> a = matrix<>::random(n, n, seed, -100.0, -1);
+    matrix<> a = matrix<>::random(n, n, seed, -100.0, 0);
 
     for (uint64_t i = 0; i < n; ++i) {
         for (uint64_t j = i + 1; j < n; ++j) {

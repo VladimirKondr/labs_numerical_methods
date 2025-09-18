@@ -101,7 +101,7 @@ void ldlt_decomposition(matrix<T>& a) {
         }
         a(j, j) -= temp_sum;
         if (std::abs(a(j, j)) < 1e-12) {
-            throw std::runtime_error("LDLT algorithm has encountered zero-element of D");
+            throw std::runtime_error("LDLT algorithm has encountered zero-element of D, meaning non-positive definition");
         }
 
         const T inv = T(1.0) / a(j, j);
@@ -163,6 +163,61 @@ vector<T> ldlt_solve(const matrix<T>& a_in, const vector<T>& b) {
             sum += a(j, i) * x[j];
         }
         x[i] = y[i] - sum;
+    }
+
+    return x;
+}
+
+/**
+ * @brief Solves a system of linear equations Ax = d for a tridiagonal matrix A using the Thomas algorithm.
+ * @tparam T The data type of the matrix and vector elements.
+ * @param a The tridiagonal matrix A.
+ * @param d The vector d (the right-hand side of the equation).
+ * @return The solution vector x.
+ */
+template <typename T>
+vector<T> tridiagonal_solve(const matrix<T>& a, const vector<T>& d) {
+    const uint64_t n = a.rows();
+    if (n != a.cols() || n != d.size()) {
+        throw std::invalid_argument("Matrix must be square and sizes must match for tridiagonal solver.");
+    }
+
+    if (n == 0) {
+        return vector<T>();
+    }
+
+    vector<T> cc(n);
+    vector<T> dc(n);
+
+    // Forward substitution
+    T b0 = a(0, 0);
+    if (std::abs(b0) < 1e-12) {
+        throw std::runtime_error("Tridiagonal matrix is singular (first element is zero).");
+    }
+    cc[0] = a(0, 1) / b0;
+    dc[0] = d[0] / b0;
+
+    for (uint64_t i = 1; i < n; ++i) {
+        T a_i = a(i, i - 1);
+        T b_i = a(i, i);
+        T denom = b_i - a_i * cc[i - 1];
+        if (std::abs(denom) < 1e-12) {
+            throw std::runtime_error("Tridiagonal matrix is singular (zero pivot encountered).");
+        }
+        
+        if (i < n - 1) {
+            T c_i = a(i, i + 1);
+            cc[i] = c_i / denom;
+        }
+        
+        dc[i] = (d[i] - a_i * dc[i - 1]) / denom;
+    }
+
+    // Backward substitution
+    vector<T> x(n);
+    x[n - 1] = dc[n - 1];
+    for (int i = n - 2; i >= 0; --i) {
+        x[i] = dc[i] - cc[i] * x[i + 1];
     }
 
     return x;

@@ -6,7 +6,9 @@
 #include "../linalg/operations.cpp"
 #include "../linalg/solvers.cpp"
 
+
 int main() {
+    std::cout << std::fixed << std::setprecision(15);
     const uint64_t n = 2000;
     const uint64_t m = 4;
     const uint64_t seed = time(0);
@@ -32,6 +34,7 @@ int main() {
     double residual_norm_inf_no_pivot = residual_no_pivot.norm_inf();
     double relative_error_no_pivot = (x_no_pivot - x_exact).norm2() / x_exact.norm2();
     double relative_error_inf_no_pivot = (x_no_pivot - x_exact).norm_inf() / x_exact.norm_inf();
+
 
     std::cout << "--- Without Pivoting ---" << std::endl;
     std::cout << "First 5 coordinates of x*: ";

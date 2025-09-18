@@ -1,3 +1,5 @@
+# mkdir -p build && cd build && cmake . && cmake --build .
+
 cmake_minimum_required(VERSION 3.20)
 project(numerical_methods_course)
 
