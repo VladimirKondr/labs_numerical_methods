@@ -110,6 +110,15 @@ class matrix {
 
         return determinant;
     }
+
+    template<typename U>
+    explicit operator matrix<U>() const {
+        vector<U> new_data(this->rows() * this->cols());
+        for (size_t i = 0; i < new_data.size(); ++i) {
+            new_data[i] = static_cast<U>(this->m_data_[i]);
+        }
+        return matrix<U>(new_data, this->rows(), this->cols());
+    }
 };
 
 /**

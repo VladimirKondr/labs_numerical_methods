@@ -73,6 +73,15 @@ public:
         }
         return std::pow(sum, 1.0 / p);
     }
+
+    template<typename U>
+    explicit operator vector<U>() const {
+        vector<U> result(this->size());
+        for (size_t i = 0; i < this->size(); ++i) {
+            result[i] = static_cast<U>((*this)[i]);
+        }
+        return result;
+    }
 };
 
 /**

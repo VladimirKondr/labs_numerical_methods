@@ -41,6 +41,8 @@ int main() {
     }
     a(0, 0) = -temp_sum + 1 / std::pow(10, k - 2);
 
+    a = static_cast<matrix<double>>(static_cast<matrix<int64_t>>(a));
+
     vector<> x_exact(n);
     for (uint64_t i = 0; i < n; ++i) {
         x_exact[i] = m + i;
