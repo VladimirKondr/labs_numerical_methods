@@ -401,7 +401,7 @@ IterativeResult<T> cg_solve(
 /**
  * @brief Enum for preconditioning strategies.
  */
-enum class PreconditionerType { NONE, JACOBI, SSOR };
+enum class PreconditionerType { NONE, JACOBI, SYMMETRIC_SCALING, SSOR };
 
 /**
  * @brief Base class for preconditioners used in iterative solvers.
@@ -443,6 +443,42 @@ class JacobiPreconditioner : public Preconditioner<T> {
     explicit JacobiPreconditioner(const matrix<T>& a) : inv_diag_(a.rows()) {
         for (uint64_t i = 0; i < a.rows(); ++i) {
             inv_diag_[i] = T{1} / a(i, i);
+        }
+    }
+    
+    vector<T> apply(const vector<T>& r) const override {
+        vector<T> z(r.size());
+        for (uint64_t i = 0; i < r.size(); ++i) {
+            z[i] = inv_diag_[i] * r[i];
+        }
+        return z;
+    }
+};
+
+/**
+ * @brief Symmetric diagonal scaling preconditioner: M_ii = 1 / sqrt(sum(A[i][j]^2)).
+ * This preconditioner computes diagonal elements as the square root of the sum of 
+ * squared elements in each row, improving the condition number of the matrix.
+ */
+template <typename T>
+class SymmetricScalingPreconditioner : public Preconditioner<T> {
+   private:
+    vector<T> inv_diag_;
+    
+   public:
+    explicit SymmetricScalingPreconditioner(const matrix<T>& a) : inv_diag_(a.rows()) {
+        const uint64_t n = a.rows();
+        for (uint64_t i = 0; i < n; ++i) {
+            T s2 = T{0};
+            for (uint64_t j = 0; j < n; ++j) {
+                s2 += a(i, j) * a(i, j);
+            }
+            T d_i = std::sqrt(s2);
+            if (d_i == T{0}) {
+                inv_diag_[i] = T{1};
+            } else {
+                inv_diag_[i] = T{1} / d_i;
+            }
         }
     }
     
@@ -525,6 +561,8 @@ Preconditioner<T>* create_preconditioner(
             return new NoPreconditioner<T>();
         case PreconditionerType::JACOBI:
             return new JacobiPreconditioner<T>(a);
+        case PreconditionerType::SYMMETRIC_SCALING:
+            return new SymmetricScalingPreconditioner<T>(a);
         case PreconditionerType::SSOR:
             return new SSORPreconditioner<T>(a, omega);
         default:
@@ -554,7 +592,7 @@ IterativeResult<T> pcg_solve(
     }
 
     Preconditioner<T>* precond = create_preconditioner(preconditioner_type, a, omega);
-    
+
     vector<T> x(n, T{0});
     vector<T> r = b - (a * x);
     vector<T> z = precond->apply(r);
@@ -564,7 +602,7 @@ IterativeResult<T> pcg_solve(
     for (uint64_t k = 0; k < max_iterations; ++k) {
         vector<T> Ap = a * p;
         T alpha = rz / (p * Ap);
-        
+
         for (uint64_t i = 0; i < n; ++i) {
             x[i] += alpha * p[i];
             r[i] -= alpha * Ap[i];
@@ -578,7 +616,7 @@ IterativeResult<T> pcg_solve(
         z = precond->apply(r);
         T rz_new = r * z;
         T beta = rz_new / rz;
-        
+
         for (uint64_t i = 0; i < n; ++i) {
             p[i] = z[i] + beta * p[i];
         }

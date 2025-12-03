@@ -117,6 +117,34 @@ int main() {
     std::cout << "Время выполнения: " << duration_pcg_jacobi.count() << "s" << std::endl;
     std::cout << std::endl;
 
+    std::cout << "========== PCG с симметричным диагональным масштабированием ==========" << std::endl;
+    auto start_pcg_scaling = std::chrono::high_resolution_clock::now();
+    auto result_pcg_scaling = pcg_solve(a, b, PreconditionerType::SYMMETRIC_SCALING, 1.0, epsilon, k_max);
+    auto end_pcg_scaling = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration_pcg_scaling = end_pcg_scaling - start_pcg_scaling;
+
+    if (result_pcg_scaling.converged) {
+        std::cout << "Сходимость достигнута на итерации: " << result_pcg_scaling.iterations << std::endl;
+    } else {
+        std::cout << "ВНИМАНИЕ: Превышено максимальное количество итераций (" << k_max << ")" << std::endl;
+        std::cout << "Результат получен на итерации: " << result_pcg_scaling.iterations << std::endl;
+    }
+    
+    std::cout << "First 5 coordinates of x*: ";
+    for (uint64_t i = 0; i < 5; ++i) {
+        std::cout << result_pcg_scaling.solution[i] << " ";
+    }
+    std::cout << std::endl;
+
+    vector<double> residual_pcg_scaling = (a * result_pcg_scaling.solution) - b;
+    double residual_norm_pcg_scaling = residual_pcg_scaling.norm2();
+    double relative_error_pcg_scaling = (result_pcg_scaling.solution - x_exact).norm2() / x_exact.norm2();
+    
+    std::cout << "L2 norm of residual vector: " << residual_norm_pcg_scaling << std::endl;
+    std::cout << "L2 Relative error: " << relative_error_pcg_scaling << std::endl;
+    std::cout << "Время выполнения: " << duration_pcg_scaling.count() << "s" << std::endl;
+    std::cout << std::endl;
+
     std::cout << "========== PCG с предобусловливанием SSOR (ω = 1.0) ==========" << std::endl;
     auto start_pcg_ssor1 = std::chrono::high_resolution_clock::now();
     auto result_pcg_ssor1 = pcg_solve(a, b, PreconditionerType::SSOR, 1.0, epsilon, k_max);
@@ -174,24 +202,28 @@ int main() {
     std::cout << std::endl;
 
     std::cout << "========== Сводка результатов ==========" << std::endl;
-    std::cout << std::setw(30) << "Метод" 
+    std::cout << std::setw(35) << "Метод" 
               << std::setw(15) << "Итераций" 
               << std::setw(20) << "Время (с)" 
               << std::setw(20) << "Погрешность" << std::endl;
-    std::cout << std::string(85, '-') << std::endl;
-    std::cout << std::setw(30) << "CG (без предобусл.)" 
+    std::cout << std::string(90, '-') << std::endl;
+    std::cout << std::setw(35) << "CG (без предобусл.)" 
               << std::setw(15) << result_cg.iterations 
               << std::setw(20) << duration_cg.count() 
               << std::setw(20) << relative_error_cg << std::endl;
-    std::cout << std::setw(30) << "PCG (Якоби)" 
+    std::cout << std::setw(35) << "PCG (Якоби)" 
               << std::setw(15) << result_pcg_jacobi.iterations 
               << std::setw(20) << duration_pcg_jacobi.count() 
               << std::setw(20) << relative_error_pcg_jacobi << std::endl;
-    std::cout << std::setw(30) << "PCG (SSOR, ω=1.0)" 
+    std::cout << std::setw(35) << "PCG (Симметр. масштабирование)" 
+              << std::setw(15) << result_pcg_scaling.iterations 
+              << std::setw(20) << duration_pcg_scaling.count() 
+              << std::setw(20) << relative_error_pcg_scaling << std::endl;
+    std::cout << std::setw(35) << "PCG (SSOR, ω=1.0)" 
               << std::setw(15) << result_pcg_ssor1.iterations 
               << std::setw(20) << duration_pcg_ssor1.count() 
               << std::setw(20) << relative_error_pcg_ssor1 << std::endl;
-    std::cout << std::setw(30) << "PCG (SSOR, ω=1.5)" 
+    std::cout << std::setw(35) << "PCG (SSOR, ω=1.5)" 
               << std::setw(15) << result_pcg_ssor15.iterations 
               << std::setw(20) << duration_pcg_ssor15.count() 
               << std::setw(20) << relative_error_pcg_ssor15 << std::endl;
@@ -200,11 +232,13 @@ int main() {
     std::cout << "========== Анализ эффективности предобусловливания ==========" << std::endl;
     
     double speedup_jacobi = static_cast<double>(result_cg.iterations) / result_pcg_jacobi.iterations;
+    double speedup_scaling = static_cast<double>(result_cg.iterations) / result_pcg_scaling.iterations;
     double speedup_ssor1 = static_cast<double>(result_cg.iterations) / result_pcg_ssor1.iterations;
     double speedup_ssor15 = static_cast<double>(result_cg.iterations) / result_pcg_ssor15.iterations;
     
     std::cout << "Ускорение сходимости (по количеству итераций):" << std::endl;
     std::cout << "  Якоби: " << speedup_jacobi << "x" << std::endl;
+    std::cout << "  Симметричное масштабирование: " << speedup_scaling << "x" << std::endl;
     std::cout << "  SSOR (ω=1.0): " << speedup_ssor1 << "x" << std::endl;
     std::cout << "  SSOR (ω=1.5): " << speedup_ssor15 << "x" << std::endl;
 

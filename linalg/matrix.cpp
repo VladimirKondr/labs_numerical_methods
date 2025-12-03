@@ -1,13 +1,14 @@
 #ifndef MATRIX_CPP
 #define MATRIX_CPP
 
+#include "vector.cpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <random>
 #include <stdexcept>
-#include "vector.cpp"
 
 template <typename T = double>
 class matrix {
@@ -24,7 +25,8 @@ class matrix {
         : m_rows_(rows), m_cols_(cols), m_data_(rows * cols, initial_value) {
     }
 
-    matrix(const vector<T>& data, uint64_t rows, uint64_t cols) : m_rows_(rows), m_cols_(cols), m_data_(data) {
+    matrix(const vector<T>& data, uint64_t rows, uint64_t cols)
+        : m_rows_(rows), m_cols_(cols), m_data_(data) {
     }
 
     T& operator()(uint64_t r, uint64_t c) {
@@ -58,7 +60,7 @@ class matrix {
      */
     static matrix<T> random(
         uint64_t rows, uint64_t cols, uint64_t seed, T min_val = -100.0, T max_val = 100.0) {
-            auto x = vector<T>::random(rows * cols, seed, min_val, max_val);
+        auto x = vector<T>::random(rows * cols, seed, min_val, max_val);
         return {x, rows, cols};
     }
 
@@ -111,7 +113,88 @@ class matrix {
         return determinant;
     }
 
-    template<typename U>
+    T trace() const {
+        if (rows() != cols()) {
+            throw std::invalid_argument("Trace can only be calculated for square matrices");
+        }
+
+        T sum = T{0};
+        for (uint64_t i = 0; i < rows(); ++i) {
+            sum += (*this)(i, i);
+        }
+        return sum;
+    }
+
+    matrix<T> inverse() const {
+        if (m_rows_ != m_cols_) {
+            throw std::invalid_argument("Inverse can only be calculated for square matrices");
+        }
+
+        const uint64_t n = m_rows_;
+        if (n == 0) {
+            return matrix<T>();
+        }
+
+        matrix<T> augmented(n, 2 * n, T{0});
+        
+        for (uint64_t i = 0; i < n; ++i) {
+            for (uint64_t j = 0; j < n; ++j) {
+                augmented(i, j) = (*this)(i, j);
+            }
+        }
+        
+        for (uint64_t i = 0; i < n; ++i) {
+            augmented(i, n + i) = T{1};
+        }
+
+        for (uint64_t i = 0; i < n; ++i) {
+            uint64_t max_row = i;
+            T max_val = std::abs(augmented(i, i));
+            
+            for (uint64_t k = i + 1; k < n; ++k) {
+                T val = std::abs(augmented(k, i));
+                if (val > max_val) {
+                    max_val = val;
+                    max_row = k;
+                }
+            }
+
+            if (std::abs(augmented(max_row, i)) < T{1e-12}) {
+                throw std::runtime_error("Matrix is singular (determinant is zero), cannot compute inverse");
+            }
+
+            if (max_row != i) {
+                for (uint64_t j = 0; j < 2 * n; ++j) {
+                    std::swap(augmented(i, j), augmented(max_row, j));
+                }
+            }
+
+            T pivot = augmented(i, i);
+            for (uint64_t j = 0; j < 2 * n; ++j) {
+                augmented(i, j) /= pivot;
+            }
+
+            for (uint64_t k = 0; k < n; ++k) {
+                if (k != i) {
+                    T factor = augmented(k, i);
+                    for (uint64_t j = 0; j < 2 * n; ++j) {
+                        augmented(k, j) -= factor * augmented(i, j);
+                    }
+                }
+            }
+        }
+
+        matrix<T> result(n, n);
+        for (uint64_t i = 0; i < n; ++i) {
+            for (uint64_t j = 0; j < n; ++j) {
+                result(i, j) = augmented(i, n + j);
+            }
+        }
+
+        return result;
+    }
+
+    template <typename U>
     explicit operator matrix<U>() const {
         vector<U> new_data(this->rows() * this->cols());
         for (size_t i = 0; i < new_data.size(); ++i) {
@@ -123,7 +206,7 @@ class matrix {
 
 /**
  * @brief Перегрузка оператора вывода для класса matrix.
- * 
+ *
  * @tparam T Тип элементов матрицы.
  * @param os Поток вывода (например, std::cout).
  * @param mat Матрица для вывода.

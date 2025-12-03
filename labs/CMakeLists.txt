@@ -15,3 +15,6 @@ target_link_libraries(lab5 linalg)
 
 add_executable(lab6 lab_6.cpp)
 target_link_libraries(lab6 linalg)
+
+add_executable(lab7 lab_7.cpp)
+target_link_libraries(lab7 linalg)
