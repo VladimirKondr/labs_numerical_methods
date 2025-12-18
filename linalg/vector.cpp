@@ -1,15 +1,17 @@
 #ifndef VECTOR_CPP
 #define VECTOR_CPP
 
-#include <vector>
-#include <cmath>
-#include <iostream>
 #include <algorithm>
+#include <cmath>
+#include <concepts>
+#include <iostream>
 #include <random>
+#include <type_traits>
+#include <vector>
 
-template<typename T = double>
+template <typename T = double>
 class vector : public std::vector<T> {
-public:
+   public:
     using std::vector<T>::vector;
 
     /**
@@ -20,7 +22,8 @@ public:
      */
     static vector<T> random(uint64_t size, uint64_t seed, T min_val = -100.0, T max_val = 100.0) {
         if (min_val > max_val) {
-            throw std::invalid_argument("Min bnorder of random must be less of equal to the max border");
+            throw std::invalid_argument(
+                "Min bnorder of random must be less of equal to the max border");
         }
         vector<T> result(size);
         std::mt19937 gen(seed);
@@ -74,7 +77,7 @@ public:
         return std::pow(sum, 1.0 / p);
     }
 
-    template<typename U>
+    template <typename U>
     explicit operator vector<U>() const {
         vector<U> result(this->size());
         for (size_t i = 0; i < this->size(); ++i) {
@@ -90,7 +93,7 @@ public:
  * \param b Second vector.
  * \return The resulting vector after addition.
  */
-template<typename T>
+template <typename T>
 vector<T> operator+(const vector<T>& a, const vector<T>& b) {
     vector<T> result(a.size());
     for (size_t i = 0; i < a.size(); ++i) {
@@ -105,7 +108,7 @@ vector<T> operator+(const vector<T>& a, const vector<T>& b) {
  * \param b Second vector.
  * \return The resulting vector after subtraction.
  */
-template<typename T>
+template <typename T>
 vector<T> operator-(const vector<T>& a, const vector<T>& b) {
     vector<T> result(a.size());
     for (size_t i = 0; i < a.size(); ++i) {
@@ -155,7 +158,7 @@ vector<T> operator^(const vector<T>& a, const vector<T>& b) {
  * \param v The vector to output.
  * \return The output stream.
  */
-template<typename T>
+template <typename T>
 std::ostream& operator<<(std::ostream& os, const vector<T>& v) {
     for (const auto& elem : v) {
         os << elem << " ";
@@ -163,4 +166,38 @@ std::ostream& operator<<(std::ostream& os, const vector<T>& v) {
     return os;
 }
 
-#endif // VECTOR_CPP
+template <typename T_Vec, typename T_Scalar>
+vector<T_Vec> operator*(const T_Vec& a, const vector<T_Vec>& vec) {
+    vector<T_Vec> res = vec;
+    for (uint64_t i = 0; i < vec.size(); ++i) {
+        res[i] *= a;
+    }
+    return res;
+}
+
+template <typename T_Vec, typename T_Scalar>
+vector<T_Vec>& operator*=(const T_Scalar& a, vector<T_Vec>& vec) {
+    for (uint64_t i = 0; i < vec.size(); ++i) {
+        vec[i] *= a;
+    }
+    return vec;
+}
+
+template <typename T_Vec, typename T_Scalar>
+vector<T_Vec> operator*(const vector<T_Vec>& vec, const T_Scalar& a) {
+    vector<T_Vec> res = vec;
+    for (uint64_t i = 0; i < vec.size(); ++i) {
+        res[i] *= a;
+    }
+    return res;
+}
+
+template <typename T_Vec, typename T_Scalar>
+vector<T_Vec>& operator*=(const vector<T_Vec>& vec, const T_Scalar& a) {
+    for (uint64_t i = 0; i < vec.size(); ++i) {
+        vec[i] *= a;
+    }
+    return vec;
+}
+
+#endif  // VECTOR_CPP

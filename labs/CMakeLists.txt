@@ -21,3 +21,6 @@ target_link_libraries(lab7 linalg)
 
 add_executable(lab8 lab_8.cpp)
 target_link_libraries(lab8 linalg)
+
+add_executable(lab9 lab_9.cpp)
+target_link_libraries(lab9 linalg)

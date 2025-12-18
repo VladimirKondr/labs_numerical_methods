@@ -4,62 +4,14 @@
 #include <iomanip>
 #include <ctime>
 
-#include "../linalg/matrix.cpp"
-#include "../linalg/operations.cpp"
-
-
-matrix<float> danilevsky_method(const matrix<float>& a_in, std::vector<matrix<float>>& m_matrices) {
-    const uint64_t n = a_in.rows();
-    
-    if (n != a_in.cols()) {
-        throw std::invalid_argument("Matrix must be square");
-    }
-    
-    matrix<float> a = a_in;
-    
-    m_matrices.clear();
-    
-    for (uint64_t k = n; k >= 2; --k) {
-        const uint64_t row_idx = k - 1;
-        const uint64_t pivot_idx = k - 2;
-        
-        const float pivot = a(row_idx, pivot_idx);
-        
-        if (std::abs(pivot) < 1e-8f) {
-            throw std::runtime_error("Pivot element is too small (near zero). Cannot continue with regular case.");
-        }
-        
-        matrix<float> m(n, n, 0.0f);
-        for (uint64_t i = 0; i < n; ++i) {
-            m(i, i) = 1.0f;
-        }
-        
-        for (uint64_t j = 0; j < n; ++j) {
-            if (j == pivot_idx) {
-                m(pivot_idx, j) = 1.0f / pivot;
-            } else {
-                m(pivot_idx, j) = -a(row_idx, j) / pivot;
-            }
-        }
-        
-        matrix<float> m_inv = m.inverse();
-        
-        a = m_inv * a * m; 
-        
-        m_matrices.push_back(m);
-    }
-    
-    return a;
-}
+#include "../danilevsky/danilevsky.h"
 
 matrix<float> generate_valid_matrix(uint64_t n, uint64_t seed, int max_attempts = 1000) {
-    std::vector<matrix<float>> dummy_m_matrices;
-    
     for (int attempt = 0; attempt < max_attempts; ++attempt) {
         matrix<float> a = matrix<float>::random(n, n, seed + attempt, -50.0f, 50.0f);
         
         try {
-            danilevsky_method(a, dummy_m_matrices);
+            perform_danilevsky(a);
             std::cout << "valid attempt number " << attempt << std::endl;
             return a;
         } catch (const std::runtime_error&) {
@@ -88,16 +40,18 @@ int main() {
     std::cout << "Матрица A" << std::endl;
     std::cout << a << std::endl;
     
-    std::vector<matrix<float>> m_matrices;
-    matrix<float> frobenius;
+    DanilevskyResult<float> result;
     
     try {
-        frobenius = danilevsky_method(a, m_matrices);
+        result = perform_danilevsky(a);
         std::cout << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "ОШИБКА при выполнении метода: " << e.what() << std::endl;
         return 1;
     }
+    
+    const matrix<float>& frobenius = result.frobenius_matrix;
+    const std::vector<matrix<float>>& m_matrices = result.transform_matrices;
     
     std::cout << "Каноническая форма Фробениуса:" << std::endl;
     std::cout << frobenius << std::endl;
